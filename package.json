@@ -1,0 +1,19 @@
+{
+  "name": "node-express-web-api",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "nodemon --env-file=.env server.js",
+    "dev": "nodemon --env-file=.env server.js --watch"
+  },
+  "author": "Ron Erick Rodriguez",
+  "license": "MIT",
+  "description": "",
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "mongoose": "^8.13.2"
+  }
+}
