@@ -1,42 +1,39 @@
-const express = require("express");
-const path = require("path");
-
-const mongoose = require("mongoose");
+import express from "express";
+import path from "path";
+import posts from "./routes/posts.js";
+import users from "./routes/users.js";
+import bodyparser from "body-parser";
 
 const app = express();
 
+import mongoose from "mongoose";
+
+const mongouser = process.env.MONGO_USER;
+const mongopass = process.env.MONGO_PASS;
+const mongoserver = process.env.MONGO_SERVER;
+const mongodb = process.env.MONGO_DB;
+const mongocluster = process.env.MONGO_CLUSTER;
+
+mongoose
+  .connect(
+    `mongodb+srv://${mongouser}:${mongopass}@${mongoserver}/${mongodb}?retryWrites=true&w=majority&appName=${mongocluster}`,
+    {}
+  )
+  .then(() => {
+    console.log("Connected to MongoDB successfully.");
+  })
+  .catch((err) => {
+    console.error("Error connecting to MongoDB:", err);
+  });
+
+app.use(bodyparser.json());
+//Static folder
 // app.use(express.static(path.join(__dirname, "public")));
 
-let posts = [
-  { id: 1, title: "Post 1", content: "Content for post 1" },
-  { id: 2, title: "Post 2", content: "Content for post 2" },
-  { id: 3, title: "Post 3", content: "Content for post 3" },
-  { id: 4, title: "Post 4", content: "Content for post 4" },
-  { id: 5, title: "Post 5", content: "Content for post 5" },
-];
-
-app.get("/api/posts", (req, res) => {
-  const limit = parseInt(req.query.limit);
-
-  if (!isNaN(limit) && limit > 0) {
-    res.json(posts.slice(0, limit));
-  } else {
-    res.json(posts);
-  }
-});
-
-app.get("/api/posts/:id", (req, res) => {
-  const postId = req.params.id;
-  const post = posts.filter((post) => post.id == postId)[0];
-  if (post) {
-    res.json(post);
-  } else {
-    res.status(404).json({ message: "Post not found" });
-  }
-});
+app.use("/api/posts", posts);
+app.use("/api/users", users);
 
 const PORT = process.env.APP_PORT || 3000;
-
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
