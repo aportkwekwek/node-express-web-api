@@ -7,6 +7,13 @@ const userSchema = new Schema(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    role: {
+      type: String,
+      enum: ["admin", "user"],
+      default: "user",
+    },
+    accessToken: { type: String },
+    accessTokenExpiry: { type: Date },
   },
   {
     timestamps: true,
@@ -33,6 +40,18 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
     return isMatch;
   } catch (err) {
     console.error(`Error comparing password: ${err}`);
+    throw err;
+  }
+};
+
+userSchema.methods.generateAccessToken = async function () {
+  try {
+    const accessToken = await bcrypt.hash(this.password, 6);
+    this.accessToken = accessToken;
+    this.accessTokenExpiry = Date.now() + 3600000; // 1 hour expiry
+    return this;
+  } catch (err) {
+    console.error(`Error generating access token: ${err}`);
     throw err;
   }
 };

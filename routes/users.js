@@ -31,28 +31,36 @@ router.get("/getuser/:id", async (req, res) => {
   }
 });
 
-router.post("/verifyuserbyemailandpassword", async (req, res) => {
-  const { email, password } = req.body; // Destructure email and password from t
-
-  console.log("Email:", email); // Log the email for debugging
-  console.log("Password:", password);
+router.post("/adduser", async (req, res) => {
+  const { name, email, password, role } = req.body; // Destructure name, email, and password from the request body
+  if (!name || !email || !password) {
+    return res
+      .status(400)
+      .json({ message: "Please provide all required fields" }); // Handle case when required fields are missing
+  }
   try {
-    var getUserByEmail = await User.findOne({ email: email }); // Fetch user by email from the "users" collection
-    if (getUserByEmail) {
-      console.log("User found:", getUserByEmail); // Log the found user for debugging
-
-      const isMatch = await getUserByEmail.comparePassword(password); // Compare the provided password with the stored hashed password
-      console.log("Password match:", isMatch); // Log the password match result for debugging
-      if (isMatch) {
-        res.json(getUserByEmail); // If password matches, send back the user in the response
-      } else {
-        res.status(401).json({ message: "Invalid username or password" }); // Handle case when password does not match
-      }
-    } else {
-      res.status(401).json({ message: "Invalid username or password" }); // Handle case when user is not found
-    }
+    const newUser = new User({ name, email, password, role }); // Create a new user instance
+    await newUser.save(); // Save the new user to the database
+    res.status(201).json(newUser); // Send back the created user in the response
   } catch (error) {
-    console.error("Error verifying user:", error);
+    console.error("Error adding user:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.delete("/deleteuser", async (req, res) => {
+  const { id } = req.body; // Destructure id from the request body
+  if (!id) {
+    return res.status(400).json({ message: "User not found" }); // Handle case when id is missing
+  }
+  try {
+    const deletedUser = await User.findByIdAndDelete(id); // Delete the user by ID from the "users" collection
+    if (!deletedUser) {
+      return res.status(404).json({ message: "User not found" }); // Handle case when user is not found
+    }
+    res.json(deletedUser); // Send back the deleted user in the response
+  } catch (error) {
+    console.error("Error deleting user:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });

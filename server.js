@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import posts from "./routes/posts.js";
 import users from "./routes/users.js";
+import authentication from "./routes/auth.js";
 import bodyparser from "body-parser";
 
 const app = express();
@@ -32,6 +33,7 @@ app.use(bodyparser.json());
 
 app.use("/api/posts", posts);
 app.use("/api/users", users);
+app.use("/api/auth", authentication);
 
 const PORT = process.env.APP_PORT || 3000;
 app.listen(PORT, () => {
