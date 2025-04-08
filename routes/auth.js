@@ -1,9 +1,8 @@
 import express from "express";
 const router = express.Router();
 import User from "../models/userSchema.js";
-import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET;
+import generateToken from "../utils/generateToken.js"; // Import the generateToken function
 
 router.post("/login", async (req, res) => {
   const { email, password } = req.body; // Destructure email and password
@@ -13,18 +12,9 @@ router.post("/login", async (req, res) => {
     if (getUserByEmail) {
       const isMatch = await getUserByEmail.comparePassword(password); // Compare the provided password with the stored hashed password
       if (isMatch) {
-        const token = jwt.sign(
-          {
-            id: getUserByEmail._id,
-            name: getUserByEmail.name,
-            email: getUserByEmail.email,
-            role: getUserByEmail.role,
-          },
-          JWT_SECRET,
-          {
-            expiresIn: "1h", // Token expiration time
-          }
-        );
+        //Generate Token
+        const token = generateToken(getUserByEmail); // Generate JWT token using the generateToken function
+
         const accessToken = await getUserByEmail.generateAccessToken(); // Generate access token for the user
         await getUserByEmail.save(); // Save the updated user with the new access token
 
@@ -40,6 +30,35 @@ router.post("/login", async (req, res) => {
     }
   } catch (error) {
     console.error("Error verifying user:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.post("/refreshToken", async (req, res) => {
+  const { accessToken } = req.body; // Destructure refreshToken from the request body
+
+  try {
+    const user = await User.findOne({ accessToken: accessToken }); // Fetch user by refresh token from the "users" collection
+    if (!user) {
+      return res.status(401).json({ message: "Invalid refresh token" }); // Handle case when refresh token is invalid
+    }
+
+    if (user.accessTokenExpiry < Date.now()) {
+      return res.status(401).json({ message: "Refresh token expired" }); // Handle case when refresh token is expired
+    }
+    const token = generateToken(user); // Generate JWT token using the generateToken function
+
+    const newAccessToken = await user.generateAccessToken(); // Generate access token for the user
+    await user.save(); // Save the updated user with the new access token
+
+    res.json({
+      jwtToken: token,
+      accessToken: newAccessToken.accessToken,
+    }); // If password matches, send back the user in the response
+
+    res.status(200).json({ user }); // Send back the user in the response
+  } catch (error) {
+    console.error("Error refreshing token:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });

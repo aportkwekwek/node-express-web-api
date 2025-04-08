@@ -1,6 +1,9 @@
 import express from "express";
 const router = express.Router();
-
+import {
+  authMiddleware,
+  authorizeRole,
+} from "../middlewares/authentication.js";
 import User from "../models/userSchema.js";
 
 router.get("/getusers", async (req, res) => {
@@ -48,21 +51,26 @@ router.post("/adduser", async (req, res) => {
   }
 });
 
-router.delete("/deleteuser", async (req, res) => {
-  const { id } = req.body; // Destructure id from the request body
-  if (!id) {
-    return res.status(400).json({ message: "User not found" }); // Handle case when id is missing
-  }
-  try {
-    const deletedUser = await User.findByIdAndDelete(id); // Delete the user by ID from the "users" collection
-    if (!deletedUser) {
-      return res.status(404).json({ message: "User not found" }); // Handle case when user is not found
+router.delete(
+  "/deleteuser",
+  authMiddleware,
+  authorizeRole("admin"),
+  async (req, res) => {
+    const { id } = req.body; // Destructure id from the request body
+    if (!id) {
+      return res.status(400).json({ message: "User not found" }); // Handle case when id is missing
     }
-    res.json(deletedUser); // Send back the deleted user in the response
-  } catch (error) {
-    console.error("Error deleting user:", error);
-    res.status(500).json({ message: "Internal server error" });
+    try {
+      const deletedUser = await User.findByIdAndDelete(id); // Delete the user by ID from the "users" collection
+      if (!deletedUser) {
+        return res.status(404).json({ message: "User not found" }); // Handle case when user is not found
+      }
+      res.json(deletedUser); // Send back the deleted user in the response
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   }
-});
+);
 
 export default router;
